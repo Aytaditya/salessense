@@ -10,10 +10,7 @@ const FrontPage = () => {
 				{/* Background graphics */}
                       <img src="/bgLeft.svg" alt="" className="absolute h-[80%] object-cover -z-10 top-1/2 -translate-y-1/2 right-0" />
                       <img src="/bgRight.svg" alt="" className="absolute h-[80%] object-cover -z-10 top-1/2 -translate-y-1/2 left-0" />
-
-				
 				<div>
-					
 
 					<h1 className="text-3xl font-medium mb-2">
 						Welcome to the{" "}
