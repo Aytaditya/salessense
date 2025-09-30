@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+
+:root {
+	font-size: 16px;
+}
+
+html {
+	zoom: 100%;
+	-ms-text-size-adjust: 100%;
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	background: #111111;
+	color: white;
+	font-family: "Helvetica Neue", sans-serif;
+	::-webkit-scrollbar {
+		width: 12px;
+		background-color: transparent;
+	}
+	::-webkit-scrollbar-thumb {
+		background-color: rgba(0, 0, 0, 0.5);
+		border-radius: 6px;
+	}
+	::-webkit-scrollbar-corner {
+		background: rgba(0, 0, 0, 0);
+	}
+	min-width: 1280px; /* or your desired minimum width */
+	min-height: 720px; /* or your desired minimum height */
+	font-size: 16px;
+	line-height: 1.5;
+	text-rendering: optimizeLegibility;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+/* Convert pixel values to viewport units */
+@media screen and (min-width: 1280px) {
+	:root {
+		--vh: calc(100vh / 100);
+		--vw: calc(100vw / 100);
+	}
+}
+
+code {
+	font-family: "Helvetica Neue", sans-serif;
+}
