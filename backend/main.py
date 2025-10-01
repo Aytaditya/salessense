@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
 import io
+from pydantic import BaseModel
 
 
 app = FastAPI()
@@ -14,6 +15,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+class ChatRequest(BaseModel):
+    message: str
 
 
 
@@ -49,5 +53,11 @@ async def csv_list(file: UploadFile = File(...)):
     data = df.to_dict(orient="records")
 
     return {"data": data}
+
+
+@app.post("/api/chat")
+async def chat_endpoint(request: ChatRequest):
+    # Dummy response for demonstration
+    return {"answer": request.message}
 
 

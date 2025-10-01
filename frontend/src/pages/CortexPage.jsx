@@ -3,6 +3,7 @@ import { usePapaParse } from 'react-papaparse';
 import * as XLSX from 'xlsx';
 import axios from "axios";
 import Dashboard from '../components/Dashboard';
+import TalkToData from '../components/TalkToData';
 
 const CortexPage = () => {
   const [fileData, setFileData] = useState(null);
@@ -24,7 +25,7 @@ const CortexPage = () => {
 
     setBackendLoading(true); // start loading
 
-    const formData = new FormData();
+    const formData = new FormData();  // FormData is a special browser API for sending files or form fields in a multipart/form-data request.
     formData.append("file", uploadedFile);
 
     try {
@@ -177,10 +178,8 @@ const CortexPage = () => {
   );
 
   const TalkToDataTab = () => (
-    <div className="bg-[#303030] rounded-2xl p-6 border border-gray-600 mt-6">
-      <h2 className="text-2xl font-bold text-white mb-4">Talk to Data</h2>
-      <p className="text-gray-300">Interactive data querying and analysis tools will be here.</p>
-      {/* Add your talk to data components here */}
+    <div className="p-6 mt-6">
+      <TalkToData />
     </div>
   );
 
