@@ -179,7 +179,7 @@ const CortexPage = () => {
 
   const TalkToDataTab = () => (
     <div className="p-6 mt-6">
-      <TalkToData />
+      <TalkToData  file={uploadedFile}/>
     </div>
   );
 

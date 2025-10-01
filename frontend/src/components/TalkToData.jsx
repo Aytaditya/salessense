@@ -1,9 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { SendHorizontal } from 'lucide-react'
+import axios from "axios";
+import ReactMarkdown from 'react-markdown';
 
-const TalkToData = () => {
+const TalkToData = ({ file }) => {
     const [messages, setMessages] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [lastResponse, setLastResponse] = useState(null);
     const messagesEndRef = useRef(null);
     const analysisRef = useRef(null);
     const recommendationsRef = useRef(null);
@@ -11,15 +15,15 @@ const TalkToData = () => {
     const quickActions = [
         {
             id: 1,
-            title: "Secure Connection",
-            subtitle: "Check connection availability",
-            message: "Check the current connection status and availability"
+            title: "Unique Customers",
+            subtitle: "Total Unique Customers",
+            message: "How many unique customers"
         },
         {
             id: 2,
-            title: "Maintenance Impact",
-            subtitle: "Check affected customers",
-            message: "Analyze maintenance impact on customers"
+            title: "Top 10 Products",
+            subtitle: "Best Selling products",
+            message: "What are the top 10 best-selling products by revenue?"
         },
         {
             id: 3,
@@ -35,9 +39,9 @@ const TalkToData = () => {
         },
         {
             id: 5,
-            title: "Router Security",
-            subtitle: "Check router security",
-            message: "Analyze router security configurations"
+            title: "Top 5 Countries",
+            subtitle: "Top Performing Countires",
+            message: "Top 5 Countires by Highest Sales"
         }
     ];
 
@@ -49,9 +53,34 @@ const TalkToData = () => {
         scrollToBottom();
     }, [messages, isLoading]);
 
+    const formatAnswerData = (answer) => {
+        if (!answer || !Array.isArray(answer)) return 'No data available';
+        
+        if (answer.length === 1 && typeof answer[0] === 'object') {
+            // Single object with multiple key-value pairs
+            const data = answer[0];
+            return Object.entries(data).map(([key, value]) => 
+                `- **${key}**: ${typeof value === 'number' ? value.toLocaleString() : value}`
+            ).join('\n');
+        } else if (answer.length > 1) {
+            // Multiple objects - show as table
+            const headers = Object.keys(answer[0]);
+            const headerRow = `| ${headers.join(' | ')} |\n| ${headers.map(() => '---').join(' | ')} |`;
+            const dataRows = answer.map(row => 
+                `| ${headers.map(header => 
+                    typeof row[header] === 'number' ? row[header].toLocaleString() : row[header]
+                ).join(' | ')} |`
+            ).join('\n');
+            return `${headerRow}\n${dataRows}`;
+        } else {
+            // Single value or array
+            return JSON.stringify(answer, null, 2);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!inputMessage.trim() || isLoading) return;
+        if (!inputMessage.trim() || isLoading || !file) return;
 
         const userMessage = {
             id: Date.now(),
@@ -65,28 +94,34 @@ const TalkToData = () => {
         setIsLoading(true);
 
         try {
-            // Simulate API call - replace with your actual endpoint
-            const response = await fetch("http://localhost:8000/api/chat", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    message: inputMessage,
-                }),
-            });
+            const formData = new FormData();
+            formData.append('message', inputMessage);
+            formData.append('file', file);
 
-            if (!response.ok) throw new Error('API call failed');
+            const response = await axios.post(
+                "http://localhost:8000/api/chat",
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
 
-            const result = await response.json();
+            const result = response.data;
+            console.log('API Response:', result);
+            
+            setLastResponse(result);
 
-            console.log(result)
+            // Create markdown formatted bot message
+            const answerData = formatAnswerData(result.answer);
+            const botContent = `## Summary\n${result.natural_language_summary}\n\n## Data Results\n\`\`\`json\n${JSON.stringify(result.answer, null, 2)}\n\`\`\``;
 
             const botMessage = {
                 id: Date.now() + 1,
-                content: result.answer ,
+                content: botContent,
                 sender: "assistant",
-                timestamp: new Date()
+                timestamp: new Date(),
             };
 
             setMessages(prev => [...prev, botMessage]);
@@ -96,7 +131,7 @@ const TalkToData = () => {
                 id: Date.now() + 1,
                 content: "I apologize, but I'm having trouble processing your request right now. Please try again later.",
                 sender: "assistant",
-                timestamp: new Date()
+                timestamp: new Date(),
             };
             setMessages(prev => [...prev, errorMessage]);
         } finally {
@@ -127,7 +162,7 @@ const TalkToData = () => {
 
                 {/* Left Side - Chat Display */}
                 <div className={hasConversation ? "col-span-5" : "col-span-1"}>
-                    <div className="flex flex-col w-full h-[64vh] r px-8 pt-8 pb-2">
+                    <div className="flex flex-col w-full h-[64vh] px-8 pt-8 pb-2">
                         {messages.length === 0 ? (
                             // Welcome View
                             <div className="flex flex-row gap-6 items-center">
@@ -147,6 +182,13 @@ const TalkToData = () => {
                                     <span className="text-gray-300">
                                         I can help you analyze your data and generate insights.
                                     </span>
+                                    {!file && (
+                                        <div className="mt-4 p-3 bg-yellow-900 border border-yellow-700 rounded-lg">
+                                            <p className="text-yellow-200 text-sm">
+                                                Please upload a file first to start analyzing your data.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : (
@@ -180,16 +222,39 @@ const TalkToData = () => {
 
                                     <div className="text-xl font-light flex-1 min-h-0 flex flex-col">
                                         <div className="overflow-y-auto flex-1 custom-scrollbar pb-4">
-                                            {lastMessage?.content ? (
-                                                <div className="text-gray-300 text-lg leading-relaxed break-words whitespace-pre-wrap">
-                                                    {lastMessage.content}
-                                                </div>
-                                            ) : isLoading ? (
+                                            {isLoading ? (
+                                                // Loading State for new response
                                                 <div className="flex items-center gap-2 text-gray-300">
                                                     <div className="w-6 h-6 border-2 border-[#D93954] border-t-transparent rounded-full animate-spin"></div>
                                                     Processing your query...
                                                 </div>
+                                            ) : lastMessage?.content ? (
+                                                // Bot Response with Markdown
+                                                <div className="text-gray-300 text-lg leading-relaxed">
+                                                    <ReactMarkdown
+                                                        components={{
+                                                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-white mb-4" {...props} />,
+                                                            h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-white mb-3 mt-4" {...props} />,
+                                                            h3: ({node, ...props}) => <h3 className="text-lg font-medium text-white mb-2 mt-3" {...props} />,
+                                                            p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
+                                                            ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1" {...props} />,
+                                                            ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />,
+                                                            li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                                                            strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
+                                                            code: ({node, inline, ...props}) => 
+                                                                inline ? 
+                                                                <code className="bg-gray-800 px-1 py-0.5 rounded text-sm" {...props} /> :
+                                                                <pre className="bg-gray-900 p-3 rounded-lg overflow-x-auto my-3 text-sm" {...props} />,
+                                                            table: ({node, ...props}) => <table className="w-full border-collapse border border-gray-600 my-3" {...props} />,
+                                                            th: ({node, ...props}) => <th className="border border-gray-600 px-3 py-2 bg-gray-800 text-left font-semibold" {...props} />,
+                                                            td: ({node, ...props}) => <td className="border border-gray-600 px-3 py-2" {...props} />,
+                                                        }}
+                                                    >
+                                                        {lastMessage.content}
+                                                    </ReactMarkdown>
+                                                </div>
                                             ) : (
+                                                // Default state when no conversation
                                                 <div className="flex items-center gap-2 text-gray-300">
                                                     How can I help you with your data analysis today?
                                                 </div>
@@ -211,30 +276,36 @@ const TalkToData = () => {
                             <div className="flex h-[72px] justify-center items-center border-b border-[#3E3E3E] flex-shrink-0">
                                 <div className="my-6 font-bold text-gray-200">INTERPRETATION</div>
                             </div>
-                            
+
                             {/* Analysis Section */}
                             <div className="flex flex-col flex-1 min-h-0 m-3 gap-4">
                                 <div className="flex flex-1 flex-col rounded-xl p-4 bg-[#252525] min-h-0">
                                     <div className="text-[#D93954] font-semibold mb-3 flex-shrink-0">ANALYSIS</div>
-                                    <div 
+                                    <div
                                         ref={analysisRef}
                                         className="flex-1 overflow-y-auto custom-scrollbar font-light min-h-0"
                                     >
-                                        {lastMessage?.content ? (
+                                        {isLoading ? (
+                                            // Loading state for analysis
+                                            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                                <div className="w-8 h-8 border-2 border-[#D93954] border-t-transparent rounded-full animate-spin mb-3"></div>
+                                                <span className="text-sm">Analyzing your data...</span>
+                                            </div>
+                                        ) : lastResponse?.interpretation ? (
+                                            // Analysis content from backend
                                             <div className="text-gray-300 text-sm leading-relaxed break-words whitespace-pre-wrap">
-                                                <p className="mb-3">Based on your query, I've analyzed the dataset and found:</p>
-                                                <ul className="space-y-2 ml-4">
-                                                    <li>• Key patterns in the sales data including seasonal trends and customer behavior</li>
-                                                    <li>• Revenue optimization opportunities across different product categories</li>
-                                                    <li>• Customer segmentation insights revealing distinct purchasing patterns</li>
-                                                    <li>• Inventory management recommendations based on demand forecasting</li>
-                                                    <li>• Market basket analysis showing product affinities and cross-selling opportunities</li>
-                                                    <li>• Geographic performance metrics across different regions and territories</li>
-                                                    <li>• Customer lifetime value analysis for retention strategy development</li>
-                                                    <li>• Pricing optimization suggestions based on competitive analysis</li>
-                                                </ul>
+                                                <p className="mb-3">{lastResponse.interpretation}</p>
+                                                {lastResponse.answer && (
+                                                    <div className="mt-4">
+                                                        <p className="font-semibold text-[#D93954] mb-2">Query Results:</p>
+                                                        <pre className="text-xs bg-black p-3 rounded overflow-x-auto">
+                                                            {JSON.stringify(lastResponse.answer, null, 2)}
+                                                        </pre>
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
+                                            // Default state
                                             <div className="text-center text-gray-400 h-full flex items-center justify-center">
                                                 <span className="text-sm">Analysis in progress...</span>
                                             </div>
@@ -242,36 +313,33 @@ const TalkToData = () => {
                                     </div>
                                 </div>
 
-                                {/* Recommendations Section */}
+                                {/* SQL Query Section */}
                                 <div className="flex flex-1 flex-col rounded-xl p-4 bg-[#252525] min-h-0">
-                                    <div className="text-[#D93954] font-semibold mb-3 flex-shrink-0">PANDAS QUERY</div>
-                                    <div 
+                                    <div className="text-[#D93954] font-semibold mb-3 flex-shrink-0">SQL QUERY</div>
+                                    <div
                                         ref={recommendationsRef}
                                         className="flex-1 overflow-y-auto custom-scrollbar font-light min-h-0"
                                     >
-                                        {lastMessage?.content ? (
-                                            <div className="text-gray-300 text-sm leading-relaxed break-words whitespace-pre-wrap">
-                                                <ul className="space-y-3">
-                                                    <li className="bg-[#1a1a1a] p-3 rounded-lg border-l-4 border-[#4ECDC4]">
-                                                        <strong className="text-[#4ECDC4]">Inventory Optimization:</strong> Adjust stock levels for high-performing products and reduce slow-moving inventory by 15%
-                                                    </li>
-                                                    <li className="bg-[#1a1a1a] p-3 rounded-lg border-l-4 border-[#FFB600]">
-                                                        <strong className="text-[#FFB600]">Customer Retention:</strong> Implement loyalty programs for top 20% customers showing 35% higher lifetime value
-                                                    </li>
-                                                    <li className="bg-[#1a1a1a] p-3 rounded-lg border-l-4 border-[#D93954]">
-                                                        <strong className="text-[#D93954]">Pricing Strategy:</strong> Introduce dynamic pricing for seasonal products to maximize revenue during peak demand
-                                                    </li>
-                                                    <li className="bg-[#1a1a1a] p-3 rounded-lg border-l-4 border-[#96CEB4]">
-                                                        <strong className="text-[#96CEB4]">Marketing Focus:</strong> Target cross-selling campaigns based on product affinity analysis results
-                                                    </li>
-                                                    <li className="bg-[#1a1a1a] p-3 rounded-lg border-l-4 border-[#45B7D1]">
-                                                        <strong className="text-[#45B7D1]">Operational Efficiency:</strong> Streamline supply chain for top-performing regions to reduce delivery times by 20%
-                                                    </li>
-                                                </ul>
+                                        {isLoading ? (
+                                            // Loading state for SQL query
+                                            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                                <div className="w-8 h-8 border-2 border-[#4ECDC4] border-t-transparent rounded-full animate-spin mb-3"></div>
+                                                <span className="text-sm">Generating SQL query...</span>
+                                            </div>
+                                        ) : lastResponse?.code_executed ? (
+                                            // SQL query content from backend
+                                            <div className="text-gray-300 text-sm leading-relaxed">
+                                                <div className="bg-[#1a1a1a] p-3 rounded-lg border-l-4 border-[#4ECDC4]">
+                                                    <strong className="text-[#4ECDC4]">Executed Query:</strong>
+                                                    <pre className="mt-2 text-xs bg-black p-2 rounded overflow-x-auto">
+                                                        {lastResponse.code_executed}
+                                                    </pre>
+                                                </div>
                                             </div>
                                         ) : (
+                                            // Default state
                                             <div className="text-center text-gray-400 h-full flex items-center justify-center">
-                                                <span className="text-sm">Recommendations will appear here...</span>
+                                                <span className="text-sm">SQL query will appear here...</span>
                                             </div>
                                         )}
                                     </div>
@@ -313,9 +381,9 @@ const TalkToData = () => {
                                 value={inputMessage}
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                placeholder="Ask about your data analysis..."
+                                placeholder={file ? "Ask about your data analysis..." : "Please upload a file first..."}
                                 className="flex-1 rounded-lg px-4 py-2 focus:outline-none disabled:opacity-50 bg-transparent text-white placeholder-gray-500 resize-none min-h-[40px] max-h-[120px] custom-scrollbar"
-                                disabled={isLoading}
+                                disabled={isLoading || !file}
                                 rows="1"
                                 style={{
                                     minHeight: '40px',
@@ -325,21 +393,9 @@ const TalkToData = () => {
                             <button
                                 className="cursor-pointer p-2 hover:opacity-80 transition-opacity disabled:opacity-50 flex-shrink-0"
                                 type="submit"
-                                disabled={isLoading || !inputMessage.trim()}
+                                disabled={isLoading || !inputMessage.trim() || !file}
                             >
-                                <svg
-                                    className="w-6 h-6 text-[#D93954]"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                                    />
-                                </svg>
+                                <SendHorizontal className="text-red-500" />
                             </button>
                         </div>
                     </form>
