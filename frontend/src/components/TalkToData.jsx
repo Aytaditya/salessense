@@ -15,33 +15,36 @@ const TalkToData = ({ file }) => {
     const quickActions = [
         {
             id: 1,
-            title: "Unique Customers",
-            subtitle: "Total Unique Customers",
-            message: "How many unique customers"
-        },
-        {
-            id: 2,
             title: "Top 10 Products",
             subtitle: "Best Selling products",
             message: "What are the top 10 best-selling products by revenue?"
         },
         {
+            id: 2,
+            title: "Top 5 High-Volume Customers",
+            subtitle: "Customers with over 1000 items purchased",
+            message: "Customers who bought more than 1000 items in total (Top 5)"
+
+        },
+        {
             id: 3,
-            title: "Bandwidth Management",
-            subtitle: "Modifying customer bandwidth",
-            message: "Review and manage customer bandwidth allocations"
+            title: "UK Monthly Sales 2019",
+            subtitle: "Total revenue trend by month",
+            message: "UK sales month by month in 2019 (total revenue)"
         },
         {
             id: 4,
-            title: "Router Details",
-            subtitle: "Check router versions",
-            message: "Get detailed router information and versions"
+            title: "Top 5 Customers Revenue Risk",
+            subtitle: "Potential revenue loss if top customers churn",
+            message: "If we lost our top 5 customers, how much revenue risk would we face?"
+
         },
         {
             id: 5,
-            title: "Top 5 Countries",
-            subtitle: "Top Performing Countires",
-            message: "Top 5 Countires by Highest Sales"
+            title: "Revenue Impact of Top 3 Products",
+subtitle: "Projected revenue with 20% sales growth",
+message: "What would total revenue look like if we increased sales of the top 3 products by 20%?"
+
         }
     ];
 
@@ -55,19 +58,19 @@ const TalkToData = ({ file }) => {
 
     const formatAnswerData = (answer) => {
         if (!answer || !Array.isArray(answer)) return 'No data available';
-        
+
         if (answer.length === 1 && typeof answer[0] === 'object') {
             // Single object with multiple key-value pairs
             const data = answer[0];
-            return Object.entries(data).map(([key, value]) => 
+            return Object.entries(data).map(([key, value]) =>
                 `- **${key}**: ${typeof value === 'number' ? value.toLocaleString() : value}`
             ).join('\n');
         } else if (answer.length > 1) {
             // Multiple objects - show as table
             const headers = Object.keys(answer[0]);
             const headerRow = `| ${headers.join(' | ')} |\n| ${headers.map(() => '---').join(' | ')} |`;
-            const dataRows = answer.map(row => 
-                `| ${headers.map(header => 
+            const dataRows = answer.map(row =>
+                `| ${headers.map(header =>
                     typeof row[header] === 'number' ? row[header].toLocaleString() : row[header]
                 ).join(' | ')} |`
             ).join('\n');
@@ -110,7 +113,7 @@ const TalkToData = ({ file }) => {
 
             const result = response.data;
             console.log('API Response:', result);
-            
+
             setLastResponse(result);
 
             // Create markdown formatted bot message
@@ -233,21 +236,21 @@ const TalkToData = ({ file }) => {
                                                 <div className="text-gray-300 text-lg leading-relaxed">
                                                     <ReactMarkdown
                                                         components={{
-                                                            h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-white mb-4" {...props} />,
-                                                            h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-white mb-3 mt-4" {...props} />,
-                                                            h3: ({node, ...props}) => <h3 className="text-lg font-medium text-white mb-2 mt-3" {...props} />,
-                                                            p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
-                                                            ul: ({node, ...props}) => <ul className="list-disc list-inside mb-3 space-y-1" {...props} />,
-                                                            ol: ({node, ...props}) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />,
-                                                            li: ({node, ...props}) => <li className="ml-4" {...props} />,
-                                                            strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
-                                                            code: ({node, inline, ...props}) => 
-                                                                inline ? 
-                                                                <code className="bg-gray-800 px-1 py-0.5 rounded text-sm" {...props} /> :
-                                                                <pre className="bg-gray-900 p-3 rounded-lg overflow-x-auto my-3 text-sm" {...props} />,
-                                                            table: ({node, ...props}) => <table className="w-full border-collapse border border-gray-600 my-3" {...props} />,
-                                                            th: ({node, ...props}) => <th className="border border-gray-600 px-3 py-2 bg-gray-800 text-left font-semibold" {...props} />,
-                                                            td: ({node, ...props}) => <td className="border border-gray-600 px-3 py-2" {...props} />,
+                                                            h1: ({ node, ...props }) => <h1 className="text-2xl font-bold text-white mb-4" {...props} />,
+                                                            h2: ({ node, ...props }) => <h2 className="text-xl font-semibold text-white mb-3 mt-4" {...props} />,
+                                                            h3: ({ node, ...props }) => <h3 className="text-lg font-medium text-white mb-2 mt-3" {...props} />,
+                                                            p: ({ node, ...props }) => <p className="mb-3 leading-relaxed" {...props} />,
+                                                            ul: ({ node, ...props }) => <ul className="list-disc list-inside mb-3 space-y-1" {...props} />,
+                                                            ol: ({ node, ...props }) => <ol className="list-decimal list-inside mb-3 space-y-1" {...props} />,
+                                                            li: ({ node, ...props }) => <li className="ml-4" {...props} />,
+                                                            strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
+                                                            code: ({ node, inline, ...props }) =>
+                                                                inline ?
+                                                                    <code className="bg-gray-800 px-1 py-0.5 rounded text-sm" {...props} /> :
+                                                                    <pre className="bg-gray-900 p-3 rounded-lg overflow-x-auto my-3 text-sm" {...props} />,
+                                                            table: ({ node, ...props }) => <table className="w-full border-collapse border border-gray-600 my-3" {...props} />,
+                                                            th: ({ node, ...props }) => <th className="border border-gray-600 px-3 py-2 bg-gray-800 text-left font-semibold" {...props} />,
+                                                            td: ({ node, ...props }) => <td className="border border-gray-600 px-3 py-2" {...props} />,
                                                         }}
                                                     >
                                                         {lastMessage.content}
@@ -381,7 +384,7 @@ const TalkToData = ({ file }) => {
                                 value={inputMessage}
                                 onChange={(e) => setInputMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
-                                placeholder={file ? "Ask about your data analysis..." : "Please upload a file first..."}
+                                placeholder={file ? "What is the Average sales?" : "Please upload a file first..."}
                                 className="flex-1 rounded-lg px-4 py-2 focus:outline-none disabled:opacity-50 bg-transparent text-white placeholder-gray-500 resize-none min-h-[40px] max-h-[120px] custom-scrollbar"
                                 disabled={isLoading || !file}
                                 rows="1"

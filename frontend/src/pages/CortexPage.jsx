@@ -214,15 +214,6 @@ const CortexPage = () => {
               Dashboard
             </button>
             <button
-              onClick={() => setActiveTab('ml-module')}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 ${activeTab === 'ml-module'
-                  ? 'bg-[#D93954] text-white shadow-lg'
-                  : 'text-gray-400 hover:text-white hover:bg-[#383838]'
-                }`}
-            >
-              ML Module
-            </button>
-            <button
               onClick={() => setActiveTab('talk-to-data')}
               className={`flex-1 py-3 px-4 rounded-xl font-semibold transition-all duration-200 ${activeTab === 'talk-to-data'
                   ? 'bg-[#D93954] text-white shadow-lg'
@@ -411,7 +402,6 @@ const CortexPage = () => {
           /* Tab Content */
           <div>
             {activeTab === 'dashboard' && <DashboardTab />}
-            {activeTab === 'ml-module' && <MLModuleTab />}
             {activeTab === 'talk-to-data' && <TalkToDataTab />}
           </div>
         )}
