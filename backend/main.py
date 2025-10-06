@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 import os
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
@@ -33,6 +36,11 @@ class BulkOrderRequest(BaseModel):
     orderMessage: str
     customerEmail: str
     customerPhone: str
+
+class ConfirmOrderRequest(BaseModel):
+    customerEmail: str
+    customerPhone: str
+    parsedOrder:  List[Dict[str, Any]]
 
 def load_products():
     global products_df
@@ -294,8 +302,29 @@ Return ONLY a JSON array with this exact structure:
         content = re.sub(r'```\s*', '', content)
         return json.loads(content)
     except Exception as e:
-        print(f"❌ Gemini parsing error: {str(e)}")
+        print(f" Gemini parsing error: {str(e)}")
         return [] 
+
+def send_email(receiver_email, subject, body):
+    sender_email = "adityaaryan531@gmail.com" 
+    sender_password = os.getenv("APP_PASSWORD")  
+    print(sender_password)
+    
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = subject
+    
+    msg.attach(MIMEText(body, "html"))
+    
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.send_message(msg)
+        print("Email sent successfully to", receiver_email)
+    except Exception as e:
+        print("Error sending email:", e)
 
 @app.get("/get-inventory")
 def get_inventory():
@@ -310,3 +339,106 @@ def bulkOrder(order:BulkOrderRequest):
     response=parse_bulk_order_with_gemini(order.orderMessage)
     print(response)
     return {"parsedOrder": response}
+
+
+@app.post("/confirm-order")
+def confirmOrder(confirmOrder: ConfirmOrderRequest):
+    print(confirmOrder.parsedOrder)
+
+    # 🧾 Build HTML email content
+    order_details = f"""
+    <div style="font-family: Arial, sans-serif; padding: 16px; color: #333;">
+      <h2 style="color: #0d0d0d;">Order Confirmation </h2>
+      
+      <p>Hi there,</p>
+      <p>Thank you for placing your order with us! We're processing it and will contact you shortly for confirmation.</p>
+      
+      <h3>🛍️ Order Details</h3>
+      <table style="border-collapse: collapse; width: 100%; margin-top: 10px;">
+        <tr style="background-color: #f2f2f2;">
+          <th style="border: 1px solid #ddd; padding: 8px;">Product</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Pack Size</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Quantity</th>
+          <th style="border: 1px solid #ddd; padding: 8px;">Price</th>
+        </tr>
+    """
+
+    total_price = 0
+    for item in confirmOrder.parsedOrder:
+        item_total = item["price"] * item["quantity"]
+        total_price += item_total
+        order_details += f"""
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">{item['English_Name']}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">{item['Pack_Size']}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{item['quantity']}</td>
+          <td style="border: 1px solid #ddd; padding: 8px;">₹{item_total}</td>
+        </tr>
+        """
+
+    order_details += f"""
+      </table>
+      
+      <h3 style="margin-top: 15px;">💰 Total Amount: ₹{total_price}</h3>
+      
+      <p style="margin-top: 20px;">
+        Our team will contact you soon on your registered number 
+        <strong>+91 {confirmOrder.customerPhone}</strong> for order confirmation and delivery details.
+      </p>
+
+      <p>For any queries, feel free to reply to this email.</p>
+      
+      <p style="margin-top: 20px;">Warm regards,<br><b>The SnackStore Team 🍪</b></p>
+    </div>
+    """
+
+    # Send confirmation email
+    send_email(
+        receiver_email=confirmOrder.customerEmail,
+        subject="🧾 Your Order Confirmation - SnackStore",
+        body=order_details
+    )
+
+    # Save or update order in JSON
+    orders_file = "orders.json"
+
+    if os.path.exists(orders_file):
+        with open(orders_file, "r") as f:
+            existing_orders = json.load(f)
+    else:
+        existing_orders = []
+
+    # Merge if same product already exists
+    for new_item in confirmOrder.parsedOrder:
+        matched = False
+        for existing_order in existing_orders:
+            if (
+                existing_order["English_Name"] == new_item["English_Name"]
+                and existing_order["Pack_Size"] == new_item["Pack_Size"]
+            ):
+                # Update quantity with consistent key name
+                existing_order["Quantity"] += new_item["quantity"]
+                matched = True
+                break
+        
+        if not matched:
+            clean_item = {
+                "Product_ID": new_item.get("product_id") or new_item.get("Product_ID", ""),
+                "English_Name": new_item["English_Name"],
+                "Color": new_item.get("color", ""),
+                "Pack_Size": new_item["Pack_Size"],
+                "Price": new_item["price"],
+                "Quantity": new_item["quantity"],
+                "Description": new_item.get("Description", "")
+            }
+            existing_orders.append(clean_item)
+
+    with open(orders_file, "w") as f:
+        json.dump(existing_orders, f, indent=2)
+
+    return {
+        "message": "Order confirmed, email sent, and data saved successfully!",
+    }
+
+
+# @app.get("/pending-order")

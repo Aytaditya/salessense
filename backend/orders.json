@@ -1,0 +1,47 @@
+[
+  {
+    "Product_ID": "LAY001",
+    "English_Name": "lays India's Magic Masala",
+    "Color": "Blue",
+    "Pack_Size": "50g",
+    "Price": 20,
+    "Quantity": 14,
+    "Description": ""
+  },
+  {
+    "Product_ID": "LAY002",
+    "English_Name": "American Style Cream & Onion",
+    "Color": "Green",
+    "Pack_Size": "50g",
+    "Price": 20,
+    "Quantity": 13,
+    "Description": ""
+  },
+  {
+    "Product_ID": "LAY003",
+    "English_Name": "Spanish Tomato Tango",
+    "Color": "Red",
+    "Pack_Size": "50g",
+    "Price": 20,
+    "Quantity": 15,
+    "Description": ""
+  },
+  {
+    "Product_ID": "LAY007",
+    "English_Name": "Classic Salted Chips",
+    "Color": "Yellow",
+    "Pack_Size": "50g",
+    "Price": 15,
+    "Quantity": 2,
+    "Description": ""
+  },
+  {
+    "Product_ID": "JEL009",
+    "English_Name": "Juzt Jelly, Strawberry Pouch",
+    "Color": "Red",
+    "Pack_Size": "140g",
+    "Price": 255,
+    "Quantity": 6,
+    "Description": ""
+  }
+]

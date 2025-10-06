@@ -148,15 +148,16 @@ const OrderAgent = () => {
     
     setIsProcessing(true);
     try {
-      // Send the confirmed order to backend
-      // const response = await axios.post('http://localhost:8000/confirm-order', {
-      //   customerEmail,
-      //   customerPhone,
-      //   parsedOrder
-      // });
-
-      // console.log('Order confirmed:', response.data);
+      const response = await axios.post('http://localhost:8000/confirm-order', {
+        customerEmail,
+        customerPhone,
+        parsedOrder
+      });
+      console.log(response.data);
       alert('Order confirmed and processed successfully!');
+
+      // const pendingOrderResponse=await axios.get('http://localhost:8000/pending-order')
+      // console.log(pendingOrderResponse.data);
       
       // Reset states
       setShowOrderConfirmation(false);
@@ -505,9 +506,9 @@ const OrderAgent = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
                     "teen packet Lal chips do packet Neele chips aur ek packet Hara chips aur Char Lal toffee chahie",
-                    " 10 packet Neela 10 packet Hara 10 packet Lal chips chahie aur saath mai 5 packet Laal waali toffee bhi dedo",
-                    "What's the total cost for 100 Classic items with current pricing?",
-                    "Reorder all low stock items automatically with priority shipping"
+                    "10 packet Neela 10 packet Hara 10 packet Lal chips chahie aur saath mai 5 packet Laal waali toffee bhi dedo",
+                    "do Peele wale chips aur Panch packet Meethi toffee",
+                    "Sare items do do packet kar do"
                   ].map((suggestion, index) => (
                     <button
                       key={index}
