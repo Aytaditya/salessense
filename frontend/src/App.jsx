@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage'
 import FrontPage from './pages/FrontPage'
 import Navbar from './pages/Navbar'
 import CortexPage from './pages/CortexPage'
+import OrderAgent from './pages/OrderAgent'
 
 function App() {
 
@@ -17,6 +18,7 @@ function App() {
           <Route path="/" element={<FrontPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/cortex" element={<CortexPage />} />
+          <Route path="/order-agent" element={<OrderAgent />} />
         </Routes>
       </div>
     </>

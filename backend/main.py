@@ -9,11 +9,11 @@ import json
 from google import genai
 from dotenv import load_dotenv
 import os
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
-
-
 client = genai.Client(api_key=api_key)
 app = FastAPI()
 
@@ -25,6 +25,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+products_df = None
+
+class BulkOrderRequest(BaseModel):
+    orderMessage: str
+    customerEmail: str
+    customerPhone: str
+
+def load_products():
+    global products_df
+    try:
+        products_df = pd.read_json("inventory.json")
+        print(f"Loaded {len(products_df)} products from inventory.json")
+        return True
+    except FileNotFoundError:
+        print("inventory.json not found!")
+        products_df = pd.DataFrame()  # empty fallback
+        return False
+    except Exception as e:
+        print(f"Error loading products: {str(e)}")
+        products_df = pd.DataFrame()
+        return False
+
+load_products() 
+
+QUANTITY_MAPPING = {
+    'एक': 1, 'दो': 2, 'तीन': 3, 'चार': 4, 'पांच': 5, 'पाँच': 5,
+    'छह': 6, 'छः': 6, 'सात': 7, 'आठ': 8, 'नौ': 9, 'दस': 10,
+    'ek': 1, 'do': 2, 'teen': 3, 'char': 4, 'paanch': 5, 'panch': 5,
+    'chah': 6, 'chhah': 6, 'saat': 7, 'aath': 8, 'nau': 9, 'das': 10,
+    'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+    'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+}
+
 
 def query_llm_for_sql(message: str, columns: list, sample_data: dict):
     """
@@ -216,3 +251,62 @@ async def chat(message: str = Form(...), file: UploadFile = File(...)):
             "code_executed": sql_code if 'sql_code' in locals() else "",
             "error": str(e)
         }
+
+
+def parse_bulk_order_with_gemini(user_input: str) -> List[Dict[str, Any]]:
+    """Parse bulk order using Google Gemini"""
+    global products_df
+    if products_df is None or products_df.empty:
+        return []
+
+    products_info = products_df.to_dict('records')
+    
+    prompt = f"""
+You are an expert order parser for a multi-brand snack store. Parse this BULK ORDER where customers can order multiple different products in one sentence.
+
+Customer said: "{user_input}"
+
+AVAILABLE PRODUCTS:
+{json.dumps(products_info, indent=2, ensure_ascii=False)}
+
+# Follow the rules for colors, brand names, quantities
+Return ONLY a JSON array with this exact structure:
+[
+    {{
+        "color": "Red/Blue/Green/Yellow",
+        "quantity": number,
+        "product_id": "LAY001/LAY002/LAY003/LAY007/JEL009",
+        "English_Name": "lays India's Magic Masala/American Style Cream & Onion/Spanish Tomato Tango/Classic Salted Chips/Juzt Jelly, Strawberry Pouch",
+        "Hindi_Name":"इंडियाज मैजिक मसाला/अमेरिकन क्रीम एंड अनियन/स्पैनिश टमाटर टैंगो/क्लासिक सॉल्टेड चिप्स/जस्ट जेली, स्ट्रॉबेरी पाउच",
+        "Pack_Size": "50g/140g",
+        "price":"20 or 15 or 225",
+        "confidence": "high/medium/low"
+    }}
+]
+"""
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        content = response.text.strip()
+        content = re.sub(r'```json\s*', '', content)
+        content = re.sub(r'```\s*', '', content)
+        return json.loads(content)
+    except Exception as e:
+        print(f"❌ Gemini parsing error: {str(e)}")
+        return [] 
+
+@app.get("/get-inventory")
+def get_inventory():
+    global products_df
+    if products_df is None or products_df.empty:
+        load_products()
+    return products_df.to_dict(orient="records")
+
+@app.post("/bulk-order")
+def bulkOrder(order:BulkOrderRequest):
+    print(order.customerPhone)
+    response=parse_bulk_order_with_gemini(order.orderMessage)
+    print(response)
+    return {"parsedOrder": response}

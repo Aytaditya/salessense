@@ -42,13 +42,13 @@ const FrontPage = () => {
 
 						{/* Card 2 */}
 						<Link
-							to="/home"
+							to="/order-agent"
 							className="py-6 bg-[#303030] rounded-4xl shadow-lg  w-64 flex flex-col hover:shadow-md transition-shadow ">
 							<div className="mx-6 w-12 h-12 bg-[#E45C2B] rounded-xl mb-6 flex items-center justify-center">
                             <Coins  className="w-6 h-6"/>
 							</div>
 							<p className="px-6 font-extralight">
-								Check for Minimum Baseline Security Standard (MBBS) 
+								Smart Ordering Agent
 							</p>
 							<div className="mt-auto w-full mt-24 pt-6 border-t border-[#3E3E3E] text-right">
                                 <ArrowRight className="ml-auto w-6 h-6 mr-6 text-[#ffb600]" />
