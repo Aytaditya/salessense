@@ -5,7 +5,7 @@
     "Color": "Blue",
     "Pack_Size": "50g",
     "Price": 20,
-    "Quantity": 14,
+    "Quantity": 15,
     "Description": ""
   },
   {
@@ -32,7 +32,7 @@
     "Color": "Yellow",
     "Pack_Size": "50g",
     "Price": 15,
-    "Quantity": 2,
+    "Quantity": 4,
     "Description": ""
   },
   {
@@ -41,7 +41,7 @@
     "Color": "Red",
     "Pack_Size": "140g",
     "Price": 255,
-    "Quantity": 6,
+    "Quantity": 11,
     "Description": ""
   }
 ]

@@ -441,4 +441,14 @@ def confirmOrder(confirmOrder: ConfirmOrderRequest):
     }
 
 
-# @app.get("/pending-order")
+@app.get("/pending-order")
+def getPending():
+    orders_file = "orders.json"
+
+    if not os.path.exists(orders_file):
+        return {"orders": []}  # No orders yet
+
+    df = pd.read_json(orders_file)
+    orders_list = df.to_dict(orient="records")  # Convert DataFrame to list of dicts
+
+    return {"orders": orders_list}

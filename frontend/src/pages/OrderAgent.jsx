@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Package, ShoppingCart, TrendingUp, AlertTriangle, SendHorizontal, Mic, MicOff, Mail, Phone, CheckCircle, XCircle } from 'lucide-react';
+import { Package, ShoppingCart, TrendingUp, AlertTriangle, SendHorizontal, Mic, MicOff, Mail, Phone, CheckCircle, XCircle, Clock, CheckSquare } from 'lucide-react';
 import axios from "axios";
 
 const OrderAgent = () => {
@@ -13,11 +13,14 @@ const OrderAgent = () => {
   const [isListening, setIsListening] = useState(false);
   const [parsedOrder, setParsedOrder] = useState(null);
   const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [showPendingOrders, setShowPendingOrders] = useState(false);
   const recognitionRef = useRef(null);
 
   useEffect(() => {
     fetchInventory();
     initializeSpeechRecognition();
+    fetchPendingOrders();
   }, []);
 
   const fetchInventory = async () => {
@@ -29,6 +32,17 @@ const OrderAgent = () => {
       console.error('Error fetching inventory:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPendingOrders = async () => {
+    try {
+      const response = await axios.get('http://localhost:8000/pending-order');
+      if (response.data && response.data.orders) {
+        setPendingOrders(response.data.orders);
+      }
+    } catch (error) {
+      console.error('Error fetching pending orders:', error);
     }
   };
 
@@ -86,8 +100,8 @@ const OrderAgent = () => {
   const calculateTotalCost = (order) => {
     if (!order || !Array.isArray(order)) return 0;
     return order.reduce((total, item) => {
-      const quantity = item.quantity || 0;
-      const price = item.price || 0;
+      const quantity = item.quantity || item.Quantity || 0;
+      const price = item.price || item.Price || 0;
       return total + (quantity * price);
     }, 0);
   };
@@ -156,8 +170,8 @@ const OrderAgent = () => {
       console.log(response.data);
       alert('Order confirmed and processed successfully!');
 
-      // const pendingOrderResponse=await axios.get('http://localhost:8000/pending-order')
-      // console.log(pendingOrderResponse.data);
+      // Fetch updated pending orders
+      await fetchPendingOrders();
       
       // Reset states
       setShowOrderConfirmation(false);
@@ -176,6 +190,31 @@ const OrderAgent = () => {
   const handleCancelOrder = () => {
     setShowOrderConfirmation(false);
     setParsedOrder(null);
+  };
+
+  const handleOrderReceived = async (orderIndex) => {
+    try {
+      // Update stock in backend
+      const order = pendingOrders[orderIndex];
+      const response = await axios.post('http://localhost:8000/update-stock', {
+        productId: order.Product_ID,
+        quantity: order.Quantity
+      });
+
+      console.log('Stock updated:', response.data);
+
+      // Remove from pending orders
+      const updatedOrders = pendingOrders.filter((_, index) => index !== orderIndex);
+      setPendingOrders(updatedOrders);
+
+      // Refresh inventory
+      await fetchInventory();
+
+      alert('Order marked as received and stock updated successfully!');
+    } catch (error) {
+      console.error('Error updating stock:', error);
+      alert('Error updating stock. Please try again.');
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -203,11 +242,24 @@ const OrderAgent = () => {
     return colors[category] || 'border-l-blue-500 bg-blue-950/20';
   };
 
+  const getColorClass = (color) => {
+    const colors = {
+      'Red': 'bg-red-500',
+      'Blue': 'bg-blue-500',
+      'Green': 'bg-green-500',
+      'Yellow': 'bg-yellow-500',
+      'Purple': 'bg-purple-500',
+      'Orange': 'bg-orange-500'
+    };
+    return colors[color] || 'bg-gray-500';
+  };
+
   const stats = {
     totalProducts: inventory.length,
     totalStock: inventory.reduce((sum, item) => sum + item.Stock, 0),
     lowStock: inventory.filter(item => item.Stock <= 20).length,
-    averagePrice: inventory.reduce((sum, item) => sum + item.Price, 0) / inventory.length
+    averagePrice: inventory.reduce((sum, item) => sum + item.Price, 0) / inventory.length,
+    pendingOrders: pendingOrders.length
   };
 
   if (loading) {
@@ -260,7 +312,6 @@ const OrderAgent = () => {
                           <p className="text-gray-400">Price: <span className="text-white">₹{item.price}</span></p>
                           <p className="text-gray-400">Item Total: <span className="text-white font-semibold">₹{(item.quantity * item.price).toFixed(2)}</span></p>
                         </div>
-                       
                       </div>
                     </div>
                     {item.confidence && (
@@ -295,12 +346,6 @@ const OrderAgent = () => {
               </div>
             </div>
 
-            {/* <div className="bg-[#252525] border border-gray-600 rounded-lg p-4 mb-6">
-              <h4 className="text-white font-semibold mb-2">Customer Details</h4>
-              <p className="text-gray-400">Email: {customerEmail}</p>
-              <p className="text-gray-400">Phone: {customerPhone}</p>
-            </div> */}
-
             <div className="flex justify-end gap-4">
               <button
                 onClick={handleCancelOrder}
@@ -331,6 +376,90 @@ const OrderAgent = () => {
         </div>
       )}
 
+      {/* Pending Orders Modal */}
+      {showPendingOrders && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#303030] border border-gray-600 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white">Pending Orders</h2>
+              <button
+                onClick={() => setShowPendingOrders(false)}
+                className="text-red-500 hover:text-red-600 cursor-pointer"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {pendingOrders.length > 0 ? (
+                pendingOrders.map((order, index) => (
+                  <div key={index} className="bg-[#252525] border border-gray-600 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h4 className="text-white font-semibold text-lg">{order.English_Name}</h4>
+                        <p className="text-gray-400 text-sm">Product ID: {order.Product_ID}</p>
+                        <p className="text-gray-400 text-sm">Pack Size: {order.Pack_Size}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-3 h-3 rounded-full ${getColorClass(order.Color)}`}></div>
+                        <span className="text-gray-400 text-sm">{order.Color}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="text-center">
+                        <p className="text-gray-400 text-sm">Quantity</p>
+                        <p className="text-white font-semibold text-xl">{order.Quantity}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-gray-400 text-sm">Price</p>
+                        <p className="text-white font-semibold text-xl">₹{order.Price}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-gray-400 text-sm">Item Total</p>
+                        <p className="text-white font-semibold text-xl">₹{(order.Quantity * order.Price).toFixed(2)}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleOrderReceived(index)}
+                        className="flex items-center gap-2 bg-[#D93954] hover:bg-[#d93954df] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                      >
+                        <CheckSquare className="w-4 h-4" />
+                        Mark as Received
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Clock className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">No Pending Orders</h3>
+                  <p className="text-gray-400">All orders have been processed and received.</p>
+                </div>
+              )}
+            </div>
+
+            {pendingOrders.length > 0 && (
+              <div className="mt-6 bg-[#252525] border border-gray-600 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-white font-semibold text-lg">Total Pending Orders</h4>
+                    <p className="text-gray-400 text-sm">{pendingOrders.length} items pending</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-white">₹{calculateTotalCost(pendingOrders).toFixed(2)}</p>
+                    <p className="text-gray-400 text-sm">Total Pending Amount</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
       {/* Header / Hero Section */}
       <header className="text-center mb-8">
         <div className="max-w-3xl mx-auto">
@@ -344,7 +473,7 @@ const OrderAgent = () => {
       </header>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <div className="bg-[#303030] rounded-xl p-4 border border-gray-600">
           <div className="flex items-center justify-between">
             <div>
@@ -392,6 +521,29 @@ const OrderAgent = () => {
             </div>
           </div>
         </div>
+
+        <div className="bg-[#303030] rounded-xl p-4 border border-gray-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-400 text-xs">Pending Orders</p>
+              <p className="text-xl font-bold text-white mt-1">{stats.pendingOrders}</p>
+            </div>
+            <div className="w-10 h-10 bg-yellow-900 rounded-full flex items-center justify-center">
+              <Clock className="w-5 h-5 text-yellow-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-end mb-6">
+        <button
+          onClick={() => setShowPendingOrders(true)}
+          className="flex items-center gap-2 bg-[#D93954] hover:bg-[#d93954d7] cursor-pointer text-white font-semibold py-3 px-6 rounded-lg transition-colors"
+        >
+          <Clock className="w-5 h-5" />
+          View Pending Orders ({pendingOrders.length})
+        </button>
       </div>
 
       {/* Main Content Grid - Left Side Order Input, Right Side Inventory */}
