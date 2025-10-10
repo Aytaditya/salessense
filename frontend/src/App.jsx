@@ -6,6 +6,7 @@ import FrontPage from './pages/FrontPage'
 import Navbar from './pages/Navbar'
 import CortexPage from './pages/CortexPage'
 import OrderAgent from './pages/OrderAgent'
+import Contracts from './pages/Contracts'
 
 function App() {
 
@@ -19,6 +20,7 @@ function App() {
           <Route path="/home" element={<HomePage />} />
           <Route path="/cortex" element={<CortexPage />} />
           <Route path="/order-agent" element={<OrderAgent />} />
+          <Route path="/contracts-mind-palace" element={<Contracts/>}/>
         </Routes>
       </div>
     </>

@@ -5,7 +5,7 @@
     "Color": "Blue",
     "Pack_Size": "50g",
     "Price": 20,
-    "Quantity": 15,
+    "Quantity": 7,
     "Description": ""
   },
   {
@@ -14,7 +14,7 @@
     "Color": "Green",
     "Pack_Size": "50g",
     "Price": 20,
-    "Quantity": 13,
+    "Quantity": 5,
     "Description": ""
   },
   {
@@ -23,7 +23,7 @@
     "Color": "Red",
     "Pack_Size": "50g",
     "Price": 20,
-    "Quantity": 15,
+    "Quantity": 5,
     "Description": ""
   },
   {
@@ -32,16 +32,7 @@
     "Color": "Yellow",
     "Pack_Size": "50g",
     "Price": 15,
-    "Quantity": 4,
-    "Description": ""
-  },
-  {
-    "Product_ID": "JEL009",
-    "English_Name": "Juzt Jelly, Strawberry Pouch",
-    "Color": "Red",
-    "Pack_Size": "140g",
-    "Price": 255,
-    "Quantity": 11,
+    "Quantity": 5,
     "Description": ""
   }
 ]

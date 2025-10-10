@@ -192,30 +192,6 @@ const OrderAgent = () => {
     setParsedOrder(null);
   };
 
-  const handleOrderReceived = async (orderIndex) => {
-    try {
-      // Update stock in backend
-      const order = pendingOrders[orderIndex];
-      const response = await axios.post('http://localhost:8000/update-stock', {
-        productId: order.Product_ID,
-        quantity: order.Quantity
-      });
-
-      console.log('Stock updated:', response.data);
-
-      // Remove from pending orders
-      const updatedOrders = pendingOrders.filter((_, index) => index !== orderIndex);
-      setPendingOrders(updatedOrders);
-
-      // Refresh inventory
-      await fetchInventory();
-
-      alert('Order marked as received and stock updated successfully!');
-    } catch (error) {
-      console.error('Error updating stock:', error);
-      alert('Error updating stock. Please try again.');
-    }
-  };
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -423,7 +399,6 @@ const OrderAgent = () => {
 
                     <div className="flex justify-end">
                       <button
-                        onClick={() => handleOrderReceived(index)}
                         className="flex items-center gap-2 bg-[#D93954] hover:bg-[#d93954df] text-white font-semibold py-2 px-4 rounded-lg transition-colors"
                       >
                         <CheckSquare className="w-4 h-4" />

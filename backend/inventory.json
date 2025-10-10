@@ -1,59 +1,57 @@
 [
-    {
-      "Product_ID": "LAY001",
-      "English_Name": "lays India's Magic Masala",
-      "Hindi_Name":"इंडियाज मैजिक मसाला",
-      "Color": "Blue",
-      "Pack_Size": "50g",
-      "Price": 20,
-      "Stock": 20,
-      "Description": "Blue Packet Enhanced Indian masala blend with signature spices",
-      "Category": "Spicy"
-    },
-    {
-      "Product_ID": "LAY002",
-      "English_Name": "American Style Cream & Onion",
-      "Hindi_Name":"अमेरिकन क्रीम एंड अनियन",
-      "Color": "Green",
-      "Pack_Size": "50g",
-      "Price": 20,
-      "Stock": 12,
-      "Description": "Green Packet Creamy American-style onion flavor with herbs",
-      "Category": "Creamy"
-    },
-    {
-      "Product_ID": "LAY003",
-      "English_Name": "Spanish Tomato Tango",
-      "Hindi_Name":"स्पैनिश टमाटर टैंगो",
-      "Color": "Red",
-      "Pack_Size": "50g",
-      "Price": 20,
-      "Stock": 41,
-      "Description": "Red Packet Tangy Spanish tomato taste with Mediterranean herbs",
-      "Category": "Tangy"
-    },
-    {
-      "Product_ID": "LAY007",
-      "English_Name": "Classic Salted Chips",
-      "Hindi_Name":"क्लासिक सॉल्टेड चिप्स",
-      "Color": "Yellow",
-      "Pack_Size": "50g",
-      "Price": 15,
-      "Stock": 200,
-      "Description": "Yellow Packet Lightly salted classic potato chips",
-      "Category": "Classic"
-    },
-    {
-      "Product_ID": "JEL009",
-      "English_Name": "Juzt Jelly, Strawberry Pouch",
-      "Hindi_Name": "जस्ट जेली, स्ट्रॉबेरी पाउच",
-      "Color": "Red",
-      "Pack_Size": "140g",
-      "Price": 255,
-      "Stock": 5,
-      "Description": "A sweet red toffee bursting with strawberry flavor",
-      "Category": "Toffee"
-    }
-    
-  ]
-  
+  {
+    "Product_ID": "LAY001",
+    "English_Name": "lays India's Magic Masala",
+    "Hindi_Name": "लेज़ इंडिया'ज़ मैजिक मसाला",
+    "Color": "Blue",
+    "Pack_Size": "50g",
+    "Price": 20,
+    "Stock": 15,
+    "Description": "Blue Packet Enhanced Indian masala blend with signature spices",
+    "Category": "Spicy"
+  },
+  {
+    "Product_ID": "LAY002",
+    "English_Name": "American Style Cream & Onion",
+    "Hindi_Name": "अमेरिकन स्टाइल क्रीम और अनियन",
+    "Color": "Green",
+    "Pack_Size": "50g",
+    "Price": 20,
+    "Stock": 25,
+    "Description": "Green Packet Creamy American-style onion flavor with herbs",
+    "Category": "Creamy"
+  },
+  {
+    "Product_ID": "LAY003",
+    "English_Name": "Spanish Tomato Tango",
+    "Hindi_Name": "स्पैनिश टोमेटो टैंगो",
+    "Color": "Red",
+    "Pack_Size": "50g",
+    "Price": 20,
+    "Stock": 8,
+    "Description": "Red Packet Tangy Spanish tomato taste with Mediterranean herbs",
+    "Category": "Tangy"
+  },
+  {
+    "Product_ID": "LAY007",
+    "English_Name": "Classic Salted Chips",
+    "Hindi_Name": "क्लासिक सॉल्टेड चिप्स",
+    "Color": "Yellow",
+    "Pack_Size": "50g",
+    "Price": 15,
+    "Stock": 200,
+    "Description": "Yellow Packet Lightly salted classic potato chips",
+    "Category": "Classic"
+  },
+  {
+    "Product_ID": "JEL009",
+    "English_Name": "Juzt Jelly, Strawberry Pouch",
+    "Hindi_Name": "जस्ट जेली, स्ट्रॉबेरी पाउच",
+    "Color": "Red",
+    "Pack_Size": "140g",
+    "Price": 255,
+    "Stock": 5,
+    "Description": "A sweet red toffee bursting with strawberry flavor",
+    "Category": "Toffee"
+  }
+]

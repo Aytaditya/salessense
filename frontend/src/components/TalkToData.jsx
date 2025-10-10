@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { SendHorizontal } from 'lucide-react'
+import { SendHorizontal,Bot } from 'lucide-react'
 import axios from "axios";
 import ReactMarkdown from 'react-markdown';
 
@@ -171,12 +171,14 @@ message: "What would total revenue look like if we increased sales of the top 3 
                             <div className="flex flex-row gap-6 items-center">
                                 <div className="w-[82px] h-[82px]">
                                     <div className="w-20 h-20 bg-[#D93954] rounded-full flex items-center justify-center">
-                                        <span className="text-white text-lg font-bold">CT</span>
+                                        <span className="text-white text-lg font-bold">
+                                            <Bot  className='w-12 h-12'/>
+                                            </span>
                                     </div>
                                 </div>
                                 <div className="text-xl font-light">
                                     <span className="font-bold text-2xl text-[#D93954]">
-                                        Hello,
+                                        Hello, Aditya!
                                     </span>
                                     <br />
                                     <span className="text-gray-300">I'm your</span>

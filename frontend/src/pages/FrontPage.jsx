@@ -57,13 +57,13 @@ const FrontPage = () => {
 
 						{/* Card 3 */}
 						<Link
-							to="/home"
+							to="/contracts-mind-palace"
 							className="py-6 bg-[#303030] rounded-4xl shadow-lg  w-64 flex flex-col hover:shadow-md transition-shadow">
 							<div className="mx-6 w-12 h-12 bg-[#E0301E] rounded-xl mb-6 flex items-center justify-center">
                             <BriefcaseBusiness className="w-6 h-6"/>
 							</div>
 							<p className="px-6 font-extralight">
-								Know Your Router Topology
+								Contracts Mind Palace
 							</p>
 							<div className="mt-auto w-full mt-24 pt-6 border-t border-[#3E3E3E] text-right">
                                 <ArrowRight className="ml-auto w-6 h-6 mr-6 text-[#ffb600]" />

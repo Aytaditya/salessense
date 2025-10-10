@@ -14,6 +14,7 @@ from typing import List, Optional, Dict, Any
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from threading import Lock
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
@@ -41,6 +42,8 @@ class ConfirmOrderRequest(BaseModel):
     customerEmail: str
     customerPhone: str
     parsedOrder:  List[Dict[str, Any]]
+
+
 
 def load_products():
     global products_df
@@ -365,13 +368,18 @@ def confirmOrder(confirmOrder: ConfirmOrderRequest):
 
     total_price = 0
     for item in confirmOrder.parsedOrder:
-        item_total = item["price"] * item["quantity"]
+        # 🧠 Ensure price and quantity are numeric
+        price = float(item.get("price", 0))
+        quantity = int(item.get("quantity", 0))
+
+        item_total = price * quantity
         total_price += item_total
+
         order_details += f"""
         <tr>
           <td style="border: 1px solid #ddd; padding: 8px;">{item['English_Name']}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">{item['Pack_Size']}</td>
-          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{item['quantity']}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{quantity}</td>
           <td style="border: 1px solid #ddd; padding: 8px;">₹{item_total}</td>
         </tr>
         """
@@ -416,8 +424,7 @@ def confirmOrder(confirmOrder: ConfirmOrderRequest):
                 existing_order["English_Name"] == new_item["English_Name"]
                 and existing_order["Pack_Size"] == new_item["Pack_Size"]
             ):
-                # Update quantity with consistent key name
-                existing_order["Quantity"] += new_item["quantity"]
+                existing_order["Quantity"] += int(new_item["quantity"])
                 matched = True
                 break
         
@@ -427,8 +434,8 @@ def confirmOrder(confirmOrder: ConfirmOrderRequest):
                 "English_Name": new_item["English_Name"],
                 "Color": new_item.get("color", ""),
                 "Pack_Size": new_item["Pack_Size"],
-                "Price": new_item["price"],
-                "Quantity": new_item["quantity"],
+                "Price": float(new_item.get("price", 0)),
+                "Quantity": int(new_item.get("quantity", 0)),
                 "Description": new_item.get("Description", "")
             }
             existing_orders.append(clean_item)
@@ -438,7 +445,9 @@ def confirmOrder(confirmOrder: ConfirmOrderRequest):
 
     return {
         "message": "Order confirmed, email sent, and data saved successfully!",
+        "total_price": total_price
     }
+
 
 
 @app.get("/pending-order")
@@ -452,3 +461,5 @@ def getPending():
     orders_list = df.to_dict(orient="records")  # Convert DataFrame to list of dicts
 
     return {"orders": orders_list}
+
+
