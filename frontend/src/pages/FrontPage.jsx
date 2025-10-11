@@ -33,7 +33,7 @@ const FrontPage = () => {
                                 <Brain  className="w-6 h-6"/>
 							</div>
 							<p className="px-6 font-extralight mb-14">
-                            Cortex – the “brain” of <br /> platform.
+                            Real-Time Sales Data Analysis with Cortex AI Assistant
 							</p>
 							<div className="mt-auto w-full  pt-6 border-t border-[#3E3E3E] text-right">
                                 <ArrowRight className="ml-auto w-6 h-6 mr-6 text-[#ffb600]" />
@@ -57,20 +57,20 @@ const FrontPage = () => {
 
 						{/* Card 3 */}
 						<Link
-							to="/contracts-mind-palace"
+							to="/contracts-page"
 							className="py-6 bg-[#303030] rounded-4xl shadow-lg  w-64 flex flex-col hover:shadow-md transition-shadow">
 							<div className="mx-6 w-12 h-12 bg-[#E0301E] rounded-xl mb-6 flex items-center justify-center">
                             <BriefcaseBusiness className="w-6 h-6"/>
 							</div>
 							<p className="px-6 font-extralight">
-								Contracts Mind Palace
+								Contracts AI Studio
 							</p>
 							<div className="mt-auto w-full mt-24 pt-6 border-t border-[#3E3E3E] text-right">
                                 <ArrowRight className="ml-auto w-6 h-6 mr-6 text-[#ffb600]" />
 							</div>
 						</Link>
 						{/* Card 4 - Explore_Services */}
-						<Link
+						{/* <Link
 							to="/"
 							className="py-6 bg-[#303030] rounded-4xl shadow-lg w-64 flex flex-col hover:shadow-md transition-shadow">
 							<div className="mx-6 w-12 h-12 bg-[#28A745] rounded-xl mb-6 flex items-center justify-center">
@@ -82,7 +82,7 @@ const FrontPage = () => {
 							<div className="mt-auto w-full mt-24 pt-6 border-t border-[#3E3E3E] text-right cursor-not-allowed">
                                 <ArrowRight className="ml-auto w-6 h-6 mr-6 text-[#ffb600]" />
 							</div>
-						</Link>
+						</Link> */}
 
 					</div>
 				</div>

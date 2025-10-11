@@ -11,7 +11,7 @@ const Contracts = () => {
       <header className="text-center mb-12">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Contracts Mind Palace
+            Contracts AI Studio
           </h1>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto">
           Unlock Insights. Simplify Contracts. Power Your Decisions.

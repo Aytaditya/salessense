@@ -170,7 +170,7 @@ message: "What would total revenue look like if we increased sales of the top 3 
                             // Welcome View
                             <div className="flex flex-row gap-6 items-center">
                                 <div className="w-[82px] h-[82px]">
-                                    <div className="w-20 h-20 bg-[#D93954] rounded-full flex items-center justify-center">
+                                    <div className="w-20 h-20 bg-red-500 rounded-full flex items-center justify-center">
                                         <span className="text-white text-lg font-bold">
                                             <Bot  className='w-12 h-12'/>
                                             </span>
@@ -182,10 +182,10 @@ message: "What would total revenue look like if we increased sales of the top 3 
                                     </span>
                                     <br />
                                     <span className="text-gray-300">I'm your</span>
-                                    <span className="text-gray-300 font-semibold"> Cortex Assistant</span>
+                                    <span className="text-white font-semibold"> Cortex Assistant</span>
                                     <br />
                                     <span className="text-gray-300">
-                                        I can help you analyze your data and generate insights.
+                                    How can I assist you today? Feel free to type your query or ask about anything you need help with.
                                     </span>
                                     {!file && (
                                         <div className="mt-4 p-3 bg-yellow-900 border border-yellow-700 rounded-lg">

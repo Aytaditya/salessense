@@ -463,3 +463,9 @@ def getPending():
     return {"orders": orders_list}
 
 
+@app.post("/contract-analyzer-summarization")
+def contractSummarizer(pdf: UploadFile):
+    return {"summary": "File received successfully"}
+
+
+
