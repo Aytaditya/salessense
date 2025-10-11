@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react"
 import { useCallback, useRef, useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { useEffect } from "react"
+import ReactMarkdown from 'react-markdown'
 
 function PaperPlaneIcon(props) {
   return (
@@ -21,16 +21,54 @@ function UploadHeader() {
   )
 }
 
-function UploadArea({ onFileUpload }) {
+function UploadArea({ onFileUpload, uploadedFile }) {
   const [fileName, setFileName] = useState("")
   const inputRef = useRef(null)
   const [question, setQuestion] = useState("")
-  const [isGenerating, setIsGenerating] = useState(false)
+  const [isAsking, setIsAsking] = useState(false)
+  const [answer, setAnswer] = useState("")
+  const [conversation, setConversation] = useState([])
 
-  const onSend = () => {
-    if (!question.trim()) return
-    console.log("[v0] Send question:", question)
+  const onSend = async () => {
+    if (!question.trim() || !uploadedFile) return
+    
+    setIsAsking(true)
+    
+    // Add user question to conversation
+    const userMessage = { type: 'user', content: question }
+    setConversation(prev => [...prev, userMessage])
+    
+    const currentQuestion = question
     setQuestion("")
+
+    try {
+      const formData = new FormData()
+      formData.append("pdf", uploadedFile)
+      formData.append("question", currentQuestion)
+
+      const res = await fetch("http://localhost:8000/contract-analyzer-question", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!res.ok) throw new Error("Failed to get answer")
+
+      const data = await res.json()
+      console.log(data.answer)
+      
+      // Add AI answer to conversation
+      const aiMessage = { type: 'ai', content: data.answer }
+      setConversation(prev => [...prev, aiMessage])
+      setAnswer(data.answer)
+      
+    } catch (error) {
+      console.log(error)
+      const errorMessage = { type: 'ai', content: "Sorry, I encountered an error while processing your question." }
+      setConversation(prev => [...prev, errorMessage])
+      setAnswer("Sorry, I encountered an error while processing your question.")
+    } finally {
+      setIsAsking(false)
+    }
   }
 
   const onChoose = () => inputRef.current?.click()
@@ -41,6 +79,8 @@ function UploadArea({ onFileUpload }) {
     if (f) {
       setFileName(f.name)
       onFileUpload?.(f)
+      setConversation([]) // Clear conversation when new file is uploaded
+      setAnswer("")
     }
   }, [onFileUpload])
 
@@ -49,12 +89,40 @@ function UploadArea({ onFileUpload }) {
     if (f) {
       setFileName(f.name)
       onFileUpload?.(f)
+      setConversation([]) // Clear conversation when new file is uploaded
+      setAnswer("")
     }
   }
 
   const removeFile = () => {
     setFileName("")
     onFileUpload?.(null)
+    setConversation([]) // Clear conversation when file is removed
+    setAnswer("")
+  }
+
+  // Custom components for ReactMarkdown to style the markdown content
+  const markdownComponents = {
+    h1: ({node, ...props}) => <h1 className="text-xl font-bold text-white mt-4 mb-2" {...props} />,
+    h2: ({node, ...props}) => <h2 className="text-lg font-bold text-white mt-3 mb-2" {...props} />,
+    h3: ({node, ...props}) => <h3 className="text-md font-bold text-white mt-3 mb-2" {...props} />,
+    h4: ({node, ...props}) => <h4 className="text-sm font-bold text-white mt-2 mb-1" {...props} />,
+    p: ({node, ...props}) => <p className="text-gray-300 mb-2 leading-relaxed" {...props} />,
+    ul: ({node, ...props}) => <ul className="list-disc list-inside text-gray-300 mb-2 space-y-1" {...props} />,
+    ol: ({node, ...props}) => <ol className="list-decimal list-inside text-gray-300 mb-2 space-y-1" {...props} />,
+    li: ({node, ...props}) => <li className="ml-4" {...props} />,
+    strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+    em: ({node, ...props}) => <em className="italic" {...props} />,
+    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-red-500 pl-4 my-2 text-gray-400 italic" {...props} />,
+    code: ({node, inline, ...props}) => 
+      inline ? 
+        <code className="bg-gray-800 px-1 py-0.5 rounded text-sm font-mono" {...props} /> :
+        <code className="block bg-gray-800 p-3 rounded my-2 text-sm font-mono overflow-x-auto" {...props} />,
+    table: ({node, ...props}) => <table className="w-full border-collapse border border-gray-600 my-2" {...props} />,
+    th: ({node, ...props}) => <th className="border border-gray-600 px-3 py-2 bg-gray-800 text-white font-bold" {...props} />,
+    td: ({node, ...props}) => <td className="border border-gray-600 px-3 py-2 text-gray-300" {...props} />,
+    a: ({node, ...props}) => <a className="text-red-400 hover:text-red-300 underline" {...props} />,
+    hr: ({node, ...props}) => <hr className="border-gray-600 my-4" {...props} />
   }
 
   return (
@@ -65,7 +133,7 @@ function UploadArea({ onFileUpload }) {
           <button
             type="button"
             onClick={onChoose}
-            className="underline decoration-1 underline-offset-2 hover:opacity-90 text-white"
+            className="underline decoration-1 underline-offset-2 hover:opacity-90 text-white cursor-pointer"
             aria-label="Choose a file"
           >
             choose a file
@@ -106,11 +174,16 @@ function UploadArea({ onFileUpload }) {
               placeholder="Enter your question.."
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && onSend()}
+              disabled={isAsking || !uploadedFile}
             />
             <button
               type="button"
               onClick={onSend}
-              className="h-10 w-10 flex items-center justify-center bg-red-500 cursor-pointer text-[#e9eefc] rounded-lg hover:opacity-90"
+              disabled={isAsking || !uploadedFile || !question.trim()}
+              className={`h-10 w-10 flex items-center justify-center text-[#e9eefc] rounded-lg hover:opacity-90 ${
+                isAsking || !uploadedFile || !question.trim() ? 'bg-gray-500 cursor-not-allowed' : 'bg-red-500 cursor-pointer'
+              }`}
               aria-label="Send"
               title="Send"
             >
@@ -118,7 +191,43 @@ function UploadArea({ onFileUpload }) {
             </button>
           </div>
 
-          <div className="mt-3 md:h-[390px] rounded-md bg-black" />
+          <div className="mt-3 md:h-[390px] rounded-md bg-black p-4 overflow-y-auto">
+            {isAsking ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-2 border-[#D93954] border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                  <p className="text-gray-300 text-sm">Finding answer...</p>
+                </div>
+              </div>
+            ) : conversation.length > 0 ? (
+              <div className="space-y-4">
+                {conversation.map((msg, index) => (
+                  <div key={index} className={`${msg.type === 'user' ? 'text-right' : 'text-left'}`}>
+                    {msg.type === 'user' ? (
+                      <div className="inline-block bg-red-500 text-white px-3 py-2 rounded-lg max-w-[80%]">
+                        {msg.content}
+                      </div>
+                    ) : (
+                      <div className="text-gray-300 text-sm leading-relaxed">
+                        <ReactMarkdown components={markdownComponents}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-gray-400 text-sm text-center">
+                  {uploadedFile 
+                    ? "Ask a question about your contract to get started" 
+                    : "Upload a PDF file to start asking questions"
+                  }
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -126,12 +235,28 @@ function UploadArea({ onFileUpload }) {
 }
 
 function SummaryPanel({ hasFile, isGenerating, summary }) {
-  const [question, setQuestion] = useState("")
-
-  const onSend = () => {
-    if (!question.trim()) return
-    console.log("[v0] Send question:", question)
-    setQuestion("")
+  // Custom components for ReactMarkdown to style the markdown content
+  const markdownComponents = {
+    h1: ({node, ...props}) => <h1 className="text-xl font-bold text-white mt-4 mb-2" {...props} />,
+    h2: ({node, ...props}) => <h2 className="text-lg font-bold text-white mt-3 mb-2" {...props} />,
+    h3: ({node, ...props}) => <h3 className="text-md font-bold text-white mt-3 mb-2" {...props} />,
+    h4: ({node, ...props}) => <h4 className="text-sm font-bold text-white mt-2 mb-1" {...props} />,
+    p: ({node, ...props}) => <p className="text-gray-300 mb-2 leading-relaxed" {...props} />,
+    ul: ({node, ...props}) => <ul className="list-disc list-inside text-gray-300 mb-2 space-y-1" {...props} />,
+    ol: ({node, ...props}) => <ol className="list-decimal list-inside text-gray-300 mb-2 space-y-1" {...props} />,
+    li: ({node, ...props}) => <li className="ml-4" {...props} />,
+    strong: ({node, ...props}) => <strong className="font-bold text-white" {...props} />,
+    em: ({node, ...props}) => <em className="italic" {...props} />,
+    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-red-500 pl-4 my-2 text-gray-400 italic" {...props} />,
+    code: ({node, inline, ...props}) => 
+      inline ? 
+        <code className="bg-gray-800 px-1 py-0.5 rounded text-sm font-mono" {...props} /> :
+        <code className="block bg-gray-800 p-3 rounded my-2 text-sm font-mono overflow-x-auto" {...props} />,
+    table: ({node, ...props}) => <table className="w-full border-collapse border border-gray-600 my-2" {...props} />,
+    th: ({node, ...props}) => <th className="border border-gray-600 px-3 py-2 bg-gray-800 text-white font-bold" {...props} />,
+    td: ({node, ...props}) => <td className="border border-gray-600 px-3 py-2 text-gray-300" {...props} />,
+    a: ({node, ...props}) => <a className="text-red-400 hover:text-red-300 underline" {...props} />,
+    hr: ({node, ...props}) => <hr className="border-gray-600 my-4" {...props} />
   }
 
   return (
@@ -149,9 +274,10 @@ function SummaryPanel({ hasFile, isGenerating, summary }) {
             ) : (
               <div className="text-gray-300 text-sm leading-relaxed">
                 {summary ? (
-                  <div>
-                    <h3 className="text-white font-semibold mb-2">Contract Analysis Summary</h3>
-                    <div className="whitespace-pre-wrap">{summary}</div>
+                  <div className="markdown-content">
+                    <ReactMarkdown components={markdownComponents}>
+                      {summary}
+                    </ReactMarkdown>
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -175,8 +301,52 @@ function SummaryPanel({ hasFile, isGenerating, summary }) {
   )
 }
 
+function PDFPreview({ uploadedFile, fileName }) {
+  const [pdfUrl, setPdfUrl] = useState("")
+
+  useEffect(() => {
+    if (uploadedFile) {
+      // Create object URL for the uploaded PDF file
+      const url = URL.createObjectURL(uploadedFile)
+      setPdfUrl(url)
+      
+      // Clean up object URL when component unmounts or file changes
+      return () => {
+        URL.revokeObjectURL(url)
+      }
+    } else {
+      setPdfUrl("")
+    }
+  }, [uploadedFile])
+
+  return (
+    <div className="space-y-3">
+  <div>
+    <h2 className="text-lg font-semibold text-white mb-2">PDF Preview</h2>
+    <div className="rounded-lg bg-black p-2 h-[200px] md:h-[340px]">
+      {pdfUrl ? (
+        <iframe
+          title="PDF Preview"
+          src={`${pdfUrl}#view=FitH`}
+          className="h-full w-full rounded"
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center rounded bg-black text-neutral-400 text-sm text-center px-2">
+          {uploadedFile
+            ? "Loading PDF preview..."
+            : "PDF preview will appear here after upload"}
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
+  )
+}
+
 export default function ContractAnalyzer() {
   const [uploadedFile, setUploadedFile] = useState(null)
+  const [fileName, setFileName] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [summary, setSummary] = useState("")
 
@@ -186,6 +356,7 @@ export default function ContractAnalyzer() {
 
   const handleFileUpload = (file) => {
     setUploadedFile(file)
+    setFileName(file?.name || "")
     setIsGenerating(false)
     setSummary("") // Clear previous summary when new file is uploaded
   }
@@ -210,7 +381,7 @@ export default function ContractAnalyzer() {
         const data = await res.json()
         console.log("Backend response:", data)
         
-        setSummary(data.summary )
+        setSummary(data.summary)
         
       } catch (err) {
         console.error("Error uploading file:", err)
@@ -247,7 +418,7 @@ export default function ContractAnalyzer() {
         {/* Left Column */}
         <div className="space-y-3">
           <UploadHeader />
-          <UploadArea onFileUpload={handleFileUpload} />
+          <UploadArea onFileUpload={handleFileUpload} uploadedFile={uploadedFile} />
         </div>
 
         {/* Right Column */}
@@ -260,6 +431,9 @@ export default function ContractAnalyzer() {
               summary={summary} 
             />
           </div>
+          
+          {/* PDF Preview Section */}
+          <PDFPreview uploadedFile={uploadedFile} fileName={fileName} />
         </div>
       </section>
     </main>

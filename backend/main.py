@@ -15,6 +15,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from threading import Lock
+import fitz
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
@@ -71,6 +72,17 @@ QUANTITY_MAPPING = {
     'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
 }
 
+FIELDS = [
+    "Entity Name",
+    "Client Name",
+    "Start Date",
+    "End Date",
+    "Payment Method",
+    "Payment_Amount",
+    "Duration of Engagement",
+    "Payment Terms",
+    "Scope of Work",
+]
 
 def query_llm_for_sql(message: str, columns: list, sample_data: dict):
     """
@@ -329,6 +341,64 @@ def send_email(receiver_email, subject, body):
     except Exception as e:
         print("Error sending email:", e)
 
+def extract_text_from_pdf(pdf_file):
+    text = ""
+    with fitz.open(stream=pdf_file.file.read(), filetype="pdf") as doc:
+        for page in doc:
+            text += page.get_text("text")
+    return text
+
+def split_text(text, chunk_size=20000, overlap=2000):
+    """
+    Split text into overlapping chunks.
+    chunk_size: max size per chunk
+    overlap: number of chars to overlap between chunks
+    """
+    chunks = []
+    start = 0
+    text_length = len(text)
+    
+    while start < text_length:
+        end = min(start + chunk_size, text_length)
+        chunks.append(text[start:end])
+        
+        # Move start forward, but don't go past the end
+        if end >= text_length:
+            break
+        start = end - overlap
+        
+        # Ensure we're making progress
+        if start <= chunks[-1][:100].find(text[start:start+100]):
+            start = end
+    
+    return chunks
+
+def ask_gemini(chunk, question):
+    """Ask Gemini a question about a contract chunk"""
+    prompt = f"""
+You are a legal expert. Answer the question based on the following contract text.
+If the answer is not in this section, respond with "Information not found in this section."
+
+Contract chunk:
+{chunk}
+
+Question:
+{question}
+
+Answer concisely and clearly.
+"""
+    try:
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        content = response.text.strip()
+        return content if content else "No response from AI."
+    except Exception as e:
+        print(f"Error asking Gemini: {e}")
+        return f"Error processing chunk: {str(e)}"
+
+
 @app.get("/get-inventory")
 def get_inventory():
     global products_df
@@ -465,7 +535,151 @@ def getPending():
 
 @app.post("/contract-analyzer-summarization")
 def contractSummarizer(pdf: UploadFile):
-    return {"summary": "File received successfully"}
+    contract_text = extract_text_from_pdf(pdf)
+    if len(contract_text) > 20000:
+        contract_text = contract_text[:20000]
+    prompt = f"""
+You are a legal expert. Summarize the following contract text into clear bullet points.
+Focus on: key parties, obligations, payment terms, confidentiality, termination, and dispute resolution.
 
 
+Contract text:
+{contract_text}
+"""
+    response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+    content = response.text.strip()
+    print(content)
+    return {"summary": content}
+
+
+
+
+@app.post("/contract-analyzer-question")
+async def analyze(pdf: UploadFile = File(...), question: str = Form(...)):
+    try:
+        print(f"Question received: {question}")
+        
+        # Extract text from PDF
+        contract_text = extract_text_from_pdf(pdf)
+        print(f"Extracted text length: {len(contract_text)} characters")
+        
+        # Split into chunks
+        chunks = split_text(contract_text)
+        print(f"Created {len(chunks)} chunks")
+        
+        # Process each chunk
+        answers = []
+        for i, chunk in enumerate(chunks):
+            print(f"Processing chunk {i+1}/{len(chunks)}")
+            answer = ask_gemini(chunk, question)
+            # Only include non-empty and relevant answers
+            if answer and "not found in this section" not in answer.lower():
+                answers.append(answer)
+        
+        # Combine answers
+        if not answers:
+            return {
+                "question": question, 
+                "answer": "I couldn't find relevant information to answer your question in the provided contract."
+            }
+        
+        combined_answer = "\n\n".join(answers)
+        
+        # Create summary prompt
+        prompt = f"""
+You are a legal expert. Below are answers extracted from different sections of a contract 
+in response to the question: "{question}"
+
+Multiple answers from contract sections:
+{combined_answer}
+
+Task: Synthesize these answers into ONE clear, comprehensive response that:
+1. Removes redundancy
+2. Organizes information logically
+3. Provides a complete answer to the question
+4. Uses clear, professional language
+
+Final Answer:
+"""
+        
+        # Get final summarized answer
+        summary_response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+        
+        final_answer = summary_response.text.strip() if summary_response else combined_answer
+        
+        return {
+            "question": question, 
+            "answer": final_answer,
+            "chunks_processed": len(chunks)
+        }
+        
+    except Exception as e:
+        print(f"Error in analyze endpoint: {str(e)}")
+        return {
+            "question": question,
+            "answer": f"Error processing document: {str(e)}",
+            "error": True
+        }
+
+    
+
+@app.post("/contract-extraction")
+async def contract_extraction(pdf: UploadFile):
+    text = extract_text_from_pdf(pdf)
+    if not text:
+        return {"error": "No text extracted from PDF"}
+
+    chunks = split_text(text, chunk_size=20000, overlap=2000)
+    results = []
+
+    for idx, chunk in enumerate(chunks):
+        prompt = f"""
+You are a contract analysis assistant.
+
+From this contract chunk #{idx+1}, extract the value of each field below.
+- If the field is found exactly, return the value.
+- If partially found or differs, return 'Present with Difference: <extracted text>'.
+- If not found, return 'Not Present'.
+
+Contract chunk:
+{chunk}
+
+Fields:
+{FIELDS}
+
+Return strictly as a JSON object.
+"""
+        response=client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
+
+        try:
+            cleaned = response.text.strip().replace("```json", "").replace("```", "")
+            parsed = json.loads(cleaned)
+        except Exception:
+            parsed = {"error": "Failed to parse output", "raw": response.text}
+
+        results.append(parsed)
+
+    # Merge results
+    final_result = {field: "Not Present" for field in FIELDS}
+
+    for field in FIELDS:
+        for chunk_result in results:
+            if field in chunk_result:
+                value = chunk_result[field]
+                # Prefer exact value over difference, difference over not present
+                if value != "Not Present":
+                    final_result[field] = value
+                    if not value.startswith("Present with Difference"):
+                        break
+
+    return {"insights": final_result}
 
