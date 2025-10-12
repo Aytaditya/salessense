@@ -683,3 +683,76 @@ Return strictly as a JSON object.
 
     return {"insights": final_result}
 
+
+@app.post("/contract-comparison")
+async def contractComparison(pdf1: UploadFile, pdf2: UploadFile):
+    # Step 1: Extract text
+    text1 = extract_text_from_pdf(pdf1)
+    text2 = extract_text_from_pdf(pdf2)
+
+    # Step 2: Handle large files with chunking
+    chunks1 = split_text(text1)
+    chunks2 = split_text(text2)
+
+    #  Creating summaries for each file 
+    summarized_contracts = []
+    for i, chunks in enumerate([chunks1, chunks2]):
+        summaries = []
+        for idx, chunk in enumerate(chunks):
+            prompt = f"""
+Summarize this contract section in detail (part {idx+1} of contract {i+1}):
+{chunk}
+"""
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt
+            )
+            summaries.append(response.text)
+        summarized_contracts.append(" ".join(summaries))
+
+    contract_summary_1 = summarized_contracts[0]
+    contract_summary_2 = summarized_contracts[1]
+
+    # Step 4: Ask Gemini to compare them
+    comparison_prompt = f"""
+You are a legal document comparison expert.
+Compare the following two contract summaries and find **all differences** — large or small.
+Include differences in:
+- Party names or entities
+- Dates (start/end)
+- Payment terms or amounts
+- Duration
+- Scope of work
+- Clauses (termination, confidentiality, dispute resolution)
+- Any missing or extra sections
+
+Contract A:
+{contract_summary_1}
+
+Contract B:
+{contract_summary_2}
+
+Return a **structured JSON** format like:
+{{
+"Entity Name": "Difference detail...",
+"Start Date": "Difference detail...",
+"Payment Terms": "Difference detail...",
+      ...
+"Extra Clauses in A": [...],
+"Extra Clauses in B": [...]
+    }}
+    """
+
+    comparison_response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=comparison_prompt
+    )
+    try:
+        cleaned = comparison_response.text.strip().replace("```json", "").replace("```", "")
+        parsed = json.loads(cleaned)
+    except Exception:
+        parsed = {"error": "Failed to parse output", "raw": comparison_response.text}
+
+    print(parsed)
+    return {"differences": parsed}
+

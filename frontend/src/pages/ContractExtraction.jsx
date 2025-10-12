@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Square } from "lucide-react"
 
 export default function ContractExtraction() {
   const fileInputRef = useRef(null)
@@ -10,7 +10,6 @@ export default function ContractExtraction() {
   const [selectedField, setSelectedField] = useState(null)
   const [isLoading, setIsLoading] = useState(false)
 
-  // Default fields that will be extracted
   const defaultFields = [
     "Entity Name",
     "Client Name", 
@@ -111,7 +110,7 @@ export default function ContractExtraction() {
   }
 
   const getButtonText = (field) => {
-    if (!insights) return "Not Extracted" // Before upload
+    if (!insights) return "Not Extracted" // Before uploading
     
     const value = insights[field]
     if (!value) return "Not Extracted"
@@ -251,7 +250,7 @@ export default function ContractExtraction() {
         <section className="flex flex-col">
           <h2 className="text-lg font-semibold">Insights</h2>
 
-          <div className="mt-2 rounded-md bg-[#303030] p-4 h-[180px] overflow-y-auto">
+          <div className="mt-2 rounded-md bg-[#303030] p-4 h-[220px] overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -260,6 +259,7 @@ export default function ContractExtraction() {
                 </div>
               </div>
             ) : (
+              <>
               <div className="space-y-2">
                 {defaultFields.map((field) => (
                   <button
@@ -272,6 +272,21 @@ export default function ContractExtraction() {
                   </button>
                 ))}
               </div>
+              <div className="flex mt-7">
+                <span className="flex gap-1 mr-3">
+                    <Square fill="green" />
+                    <p>Present</p>
+                </span>
+                <span className="flex gap-1 mr-3">
+                    <Square fill="Red" />
+                    <p>Not Present</p>
+                </span>
+                <span className="flex gap-1 mr-3">
+                    <Square fill="yellow" />
+                    <p>Present with Difference</p>
+                </span>
+              </div>
+              </>
             )}
           </div>
 
@@ -279,7 +294,7 @@ export default function ContractExtraction() {
           <div className="mt-4 rounded-md bg-[#303030] p-4 h-[330px] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-3">Field Details</h3>
             {selectedField ? (
-              <div className="space-y-3">
+              <div className="space-y-3 ">
                 <div>
                   <h4 className="font-medium text-white mb-1">{formatFieldName(selectedField.field)}</h4>
                   <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">
